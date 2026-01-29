@@ -1,0 +1,75 @@
+
+---
+
+## 3) `.cursorrules` (drop into repo root)
+
+```txt
+# Cursor Rules: News-to-Thread Agent (MVP)
+
+You are working in a single Next.js repository (NOT a monorepo).
+Use Yarn, TypeScript, Tailwind, and shadcn/ui.
+This is an MVP: prioritize a clean happy path and strong UX, avoid scope creep.
+
+## Non-negotiables
+- No client-side OpenAI calls. API key must never be exposed.
+- Use Next.js App Router and Route Handlers for server APIs.
+- Enforce Node runtime for extraction routes (jsdom/readability).
+- Strong typing, modularization, and consistent code style.
+
+## MVP scope guardrails (do NOT implement)
+- No X OAuth or posting
+- No user accounts, roles, orgs
+- No database persistence
+- No multi-language beyond English
+- No complex analytics dashboards
+
+## Coding standards
+- TypeScript strict; no `any` unless justified and contained.
+- Prefer pure functions in lib/ for testability.
+- Validate inputs/outputs with Zod at API boundaries.
+- Prefer small, focused modules:
+  - lib/extract.ts: URL -> extracted article
+  - lib/thread.ts: prompts + formatting + char limiting
+  - lib/openai.ts: OpenAI client wrapper
+  - lib/validators.ts: schemas
+  - lib/storage.ts: localStorage helpers (client-only)
+- Keep UI components in components/, and keep them “dumb” where possible.
+- Use async/await, no nested promise chains.
+
+## Error handling
+- API routes must return structured errors: { error: { code, message } }
+- UI must show actionable error messages and allow fallback paste-text flow.
+
+## UI requirements
+- Use shadcn/ui components (Card, Button, Input, Textarea, Tabs, Badge, Tooltip, Separator, Toaster).
+- Provide dark mode styling.
+- Output must support:
+  - Copy per tweet
+  - Copy all (numbered)
+  - Copy all (blank-line separated)
+  - Character counts per tweet
+
+## Testing
+- Add unit tests for char limiting & formatting in lib/thread.ts (vitest preferred).
+- Tests must be deterministic (no OpenAI calls in tests).
+
+## Documentation
+- Keep README accurate and concise:
+  - setup
+  - env vars
+  - scripts
+  - how it works
+  - deployment notes
+
+## Security
+- Never log OPENAI_API_KEY.
+- Add minimal rate limiting in /api/generate to avoid abuse.
+
+## Output format policy
+- The API should return:
+  {
+    tweets: string[],
+    meta: { title, siteName, url, tone, length, createdAt },
+    debug?: { extractedCharCount, model }
+  }
+- Enforce <= 280 chars per tweet in code (server-side).
