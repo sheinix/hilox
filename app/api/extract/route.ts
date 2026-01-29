@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { extractFromUrl } from "@/lib/extract";
 import { extractResponseSchema } from "@/lib/validators";
+import { toAppError } from "@/lib/observability/errors";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -10,15 +11,10 @@ const bodySchema = z.object({ url: z.string().url() });
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { url } = bodySchema.parse(body);
-    const result = await extractFromUrl(url);
-    if (!result) {
-      return NextResponse.json(
-        { error: { code: "EXTRACT_FAILED", message: "Could not extract article or content too short." } },
-        { status: 422 }
-      );
-    }
-    const validated = extractResponseSchema.parse(result);
+    const parsed = bodySchema.parse(body);
+    const url = parsed.url;
+    const { extracted } = await extractFromUrl(url);
+    const validated = extractResponseSchema.parse(extracted);
     return NextResponse.json(validated);
   } catch (e) {
     if (e instanceof z.ZodError) {
@@ -27,9 +23,10 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
+    const err = toAppError(e);
     return NextResponse.json(
-      { error: { code: "SERVER_ERROR", message: e instanceof Error ? e.message : "Extract failed." } },
-      { status: 500 }
+      { error: { code: err.code, message: err.safeMessage } },
+      { status: err.httpStatus }
     );
   }
 }

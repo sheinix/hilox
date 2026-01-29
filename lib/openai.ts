@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { threadOutlineSchema } from "./validators";
 import { enforceCharLimitBatch } from "./thread";
+import { getMaxOutputTokens } from "./cost/guards";
 
 const DEFAULT_MODEL = "gpt-4o-mini";
 
@@ -32,7 +33,7 @@ export async function requestOutline(
   threadLanguage?: string
 ): Promise<{ tweets: { topic: string; bullets: string[] }[] }> {
   const model = getModel();
-  const truncated = articleText.slice(0, 120_000);
+  const maxTokens = getMaxOutputTokens();
   const angleLine = angle ? `\nOptional angle/focus: ${angle}.` : "";
   const languageLine =
     threadLanguage && threadLanguage !== "English"
@@ -56,10 +57,11 @@ First tweet should be a hook. Last tweet should be a CTA (question or call to ac
       },
       {
         role: "user",
-        content: `Article text (use only this for the outline):\n\n${truncated}`,
+        content: `Article text (use only this for the outline):\n\n${articleText}`,
       },
     ],
     response_format: { type: "json_object" },
+    max_tokens: maxTokens,
   });
 
   const raw = completion.choices[0]?.message?.content;
@@ -87,6 +89,7 @@ export async function requestRender(
   threadLanguage?: string
 ): Promise<string[]> {
   const model = getModel();
+  const maxTokens = getMaxOutputTokens();
   const angleLine = angle ? ` Optional angle: ${angle}.` : "";
   const languageLine =
     threadLanguage && threadLanguage !== "English"
@@ -114,6 +117,7 @@ First tweet: hook. Last tweet: CTA (question or call to action).`,
       },
     ],
     response_format: { type: "json_object" },
+    max_tokens: maxTokens,
   });
 
   const raw = completion.choices[0]?.message?.content;

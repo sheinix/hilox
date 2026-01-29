@@ -24,10 +24,18 @@ Turn a news or article URL (or pasted text) into an X (Twitter) thread: 7–10 t
    ```env
    OPENAI_API_KEY=sk-...
    OPENAI_MODEL=gpt-4o-mini
+   UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
+   UPSTASH_REDIS_REST_TOKEN=...
    ```
 
    - `OPENAI_API_KEY` (required): Your OpenAI API key. Never exposed to the client.
    - `OPENAI_MODEL` (optional): Model for thread generation. Default: `gpt-4o-mini`.
+   - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`: Required for production rate limiting (Upstash Redis). If unset, rate limiting is skipped (dev only).
+   - `OVERRIDE_MAX_OUTPUT_TOKENS` (optional): Max tokens for OpenAI completions. Default: `900`.
+   - `LOG_SALT` (optional but recommended): Salt for hashing IPs in logs. If set, `hashIp()` uses `sha256(ip + LOG_SALT)` so logs never contain raw IPs.
+   - `SENTRY_DSN` (optional): Sentry DSN for server-side error reporting. If unset, Sentry is disabled.
+   - `SENTRY_ENVIRONMENT` (optional): Sentry environment name (e.g. `production`, `staging`). Defaults to `NODE_ENV`.
+   - `SENTRY_TRACES_SAMPLE_RATE` (optional): Sentry performance tracing sample rate (0–1). Default: `0`.
 
 3. Run locally:
 
@@ -62,18 +70,22 @@ Turn a news or article URL (or pasted text) into an X (Twitter) thread: 7–10 t
 ## Deployment (Vercel)
 
 - Set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in the project environment.
+- Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for production rate limiting (recommended).
 - Build: `yarn build`. No special config; App Router and Route Handlers work on Vercel.
 - Extraction and generate routes use **Node runtime** (`runtime = 'nodejs'`) for jsdom/Readability.
 
 ## Security
 
-- OpenAI API key is server-only; never sent to the client.
-- Minimal rate limiting on `/api/generate` (in-memory, per IP) to reduce abuse.
-- Never log `OPENAI_API_KEY`.
+- **API key**: OpenAI API key is server-only; never sent to the client. Never log it.
+- **SSRF protection** (`lib/security/ssrf`): User-submitted URLs are validated before fetch. Only `http`/`https`; localhost and `*.localhost` blocked; DNS resolved and private/link-local IPs rejected (10/8, 127/8, 169.254/16, 172.16/12, 192.168/16). Redirects limited (max 3), re-validated per hop; 8s timeout, 1.5MB max response. Configurable via `lib/security/constants`.
+- **Cost guards** (`lib/cost/guards`): Extracted text clamped to 20k chars; OpenAI `max_output_tokens` enforced (default 900). See `lib/cost/constants`.
+- **Rate limiting** (`lib/security/rateLimit`): Upstash Redis. Per-IP: 5/hour, 20/day. Failure tracking: ≥5 failures in 10 min → 15 min cooldown. On success, failures cleared. If Redis env vars are missing, rate limiting is skipped (dev only).
+- **Errors**: API returns `{ error: { code, message, request_id? } }` for failures. Generate route includes `request_id` in every response (success and error) for correlation. Never log article text, pasted text, prompts, or secrets.
+- **Tuning**: IP ranges, rate-limit values, fetch timeouts, and cost limits live in `lib/security/constants` and `lib/cost/constants` so you can adjust them without touching business logic.
 
 ## Testing
 
-- Unit tests for `lib/thread.ts` (char limiting, batch) with Vitest. No OpenAI calls in tests.
+- Unit tests for `lib/thread.ts`, `lib/cost/guards.ts`, and `lib/security/ssrf.ts` (char limiting, clamp, IP/hostname validation) with Vitest. No OpenAI calls in tests.
 - Run: `yarn test`.
 
 ## Scope (MVP)

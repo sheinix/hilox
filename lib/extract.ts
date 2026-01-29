@@ -1,48 +1,77 @@
 import { JSDOM } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import type { ExtractResponse } from "./validators";
+import { assertSafeUrl, safeFetchHtml, type FetchMetrics } from "./security/ssrf";
+import { AppError, EXTRACT_ERROR_CODES } from "./observability/errors";
 
 const MIN_EXTRACT_LENGTH = 800;
-const USER_AGENT =
-  "Mozilla/5.0 (compatible; NewsToThread/1.0; +https://github.com/news-to-thread)";
-const FETCH_TIMEOUT_MS = 15_000;
 
 /**
- * Fetches HTML from URL, parses with jsdom, runs Readability.
- * Returns extracted article or null if too short / failed.
+ * Parses HTML with JSDOM + Readability. Throws AppError if no article or content too short.
  */
-export async function extractFromUrl(url: string): Promise<ExtractResponse | null> {
-  const res = await fetch(url, {
-    headers: { "User-Agent": USER_AGENT },
-    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-  });
-
-  if (!res.ok) {
-    return null;
-  }
-
-  const html = await res.text();
-  const dom = new JSDOM(html, { url });
+export function extractFromHtml(html: string, finalUrl: string): ExtractResponse {
+  const dom = new JSDOM(html, { url: finalUrl });
   const document = dom.window.document;
   const reader = new Readability(document, { charThreshold: 0 });
   const article = reader.parse();
 
-  if (!article || !article.textContent || article.textContent.trim().length < MIN_EXTRACT_LENGTH) {
-    return null;
+  if (!article || !article.textContent || !article.textContent.trim()) {
+    throw new AppError(
+      EXTRACT_ERROR_CODES.READABILITY_EMPTY,
+      "Could not extract article content from this page.",
+      422
+    );
   }
 
-  const ogSite = dom.window.document.querySelector("meta[property='og:site_name']");
+  const text = article.textContent.trim();
+  if (text.length < MIN_EXTRACT_LENGTH) {
+    throw new AppError(
+      EXTRACT_ERROR_CODES.EXTRACT_TOO_SHORT,
+      "Extracted content is too short. Try pasting the article text.",
+      422,
+      { details: { extracted_chars: text.length, min_required: MIN_EXTRACT_LENGTH } }
+    );
+  }
+
+  const ogSite = document.querySelector("meta[property='og:site_name']");
+  const hostname = new URL(finalUrl).hostname.replace(/^www\./, "");
   const siteName =
     article.siteName?.trim() ||
-    (ogSite?.getAttribute("content")?.trim() || new URL(url).hostname.replace(/^www\./, ""));
+    (ogSite?.getAttribute("content")?.trim() || hostname);
 
   return {
     title: article.title?.trim() || "Untitled",
     siteName: siteName.trim(),
     byline: article.byline?.trim() || undefined,
-    text: article.textContent.trim(),
+    text,
     excerpt: article.excerpt?.trim() || undefined,
   };
+}
+
+export interface ExtractFromUrlMetrics extends FetchMetrics {
+  extracted_chars: number;
+}
+
+export interface ExtractFromUrlResult {
+  extracted: ExtractResponse;
+  metrics: ExtractFromUrlMetrics;
+}
+
+/**
+ * Fetches HTML via SSRF-safe fetch, then extracts with Readability.
+ * Throws AppError on invalid/blocked URL, fetch failure, or insufficient content.
+ */
+export async function extractFromUrl(url: string): Promise<ExtractFromUrlResult> {
+  const parsed = assertSafeUrl(url);
+  const { html, finalUrl, metrics: fetchMetrics } = await safeFetchHtml(parsed);
+  const extracted = extractFromHtml(html, finalUrl);
+
+  const metrics: ExtractFromUrlMetrics = {
+    ...fetchMetrics,
+    extracted_chars: extracted.text.length,
+  };
+
+  return { extracted, metrics };
 }
 
 /**
@@ -54,7 +83,11 @@ export function extractFromPastedText(
 ): ExtractResponse {
   const text = pastedText.trim();
   if (!text) {
-    throw new Error("Pasted text is empty");
+    throw new AppError(
+      EXTRACT_ERROR_CODES.EXTRACT_TOO_SHORT,
+      "Pasted text is empty.",
+      400
+    );
   }
   return {
     title: options.title?.trim() || "Pasted article",
