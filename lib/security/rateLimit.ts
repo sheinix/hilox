@@ -30,6 +30,16 @@ export class RateLimitError extends Error {
   }
 }
 
+/** IPs we treat as local (dev/testing); rate limits are skipped. */
+const LOCAL_IPS = new Set(["127.0.0.1", "::1", "localhost"]);
+
+/**
+ * True when the request is from the local machine (dev/testing).
+ */
+export function isLocalRequest(ip: string): boolean {
+  return LOCAL_IPS.has(ip.toLowerCase());
+}
+
 /**
  * Extracts client IP from request. Prefers first x-forwarded-for, else x-real-ip.
  */
@@ -54,8 +64,11 @@ async function isInCooldown(redis: Redis, ip: string): Promise<boolean> {
 /**
  * Enforces rate limits: cooldown first, then 5/hour and 20/day.
  * Increments hour and day counters on success. Throws RateLimitError (429) when exceeded.
+ * Skips all limits when the request is from localhost (dev/testing).
  */
 export async function enforceRateLimits(ip: string): Promise<void> {
+  if (isLocalRequest(ip)) return;
+
   const redis = getRedis();
   if (!redis) return;
 
@@ -101,8 +114,11 @@ export async function enforceRateLimits(ip: string): Promise<void> {
 
 /**
  * Records a failure for IP. If failures in window >= FAILURE_THRESHOLD, sets cooldown.
+ * No-op for local IPs (dev/testing).
  */
 export async function recordFailure(ip: string): Promise<void> {
+  if (isLocalRequest(ip)) return;
+
   const redis = getRedis();
   if (!redis) return;
 
@@ -118,8 +134,11 @@ export async function recordFailure(ip: string): Promise<void> {
 
 /**
  * Clears failure count for IP on successful request. Cooldown TTL is unchanged.
+ * No-op for local IPs (dev/testing).
  */
 export async function clearFailures(ip: string): Promise<void> {
+  if (isLocalRequest(ip)) return;
+
   const redis = getRedis();
   if (!redis) return;
 

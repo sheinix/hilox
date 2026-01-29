@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { threadOutlineSchema } from "./validators";
+import { threadOutlineSchema, getMaxPostsForLength } from "./validators";
 import { enforceCharLimitBatch } from "./thread";
 import { getMaxOutputTokens } from "./cost/guards";
 
@@ -40,6 +40,12 @@ export async function requestOutline(
       ? `\nWrite the entire thread in ${threadLanguage}. Keep the same structure (hook, points, CTA).`
       : "";
 
+  const maxPosts = getMaxPostsForLength(length);
+  const countInstruction =
+    length === "10+"
+      ? `Output a JSON object with a single key "tweets", an array of 10 to 15 items (choose the right number for the content).`
+      : `Output a JSON object with a single key "tweets", an array of exactly ${maxPosts} items.`;
+
   const completion = await client.chat.completions.create({
     model,
     messages: [
@@ -49,7 +55,7 @@ export async function requestOutline(
 Style inspiration: punchy hooks, clear value, like Justin Welsh or similar thought leaders. Use emojis sparingly to highlight key points.
 
 Output valid JSON only. No markdown code fences.
-Output a JSON object with a single key "tweets", an array of items.
+${countInstruction}
 Each item: { "topic": "short topic label", "bullets": ["point 1", "point 2", ...] }.
 Base the outline ONLY on the provided article text. Do not invent facts, numbers, or quotes. If something is not in the text, note "not confirmed" in the bullet.
 Tone: ${tone}.

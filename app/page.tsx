@@ -125,8 +125,8 @@ export default function Home() {
     );
   }, []);
 
-  const handleCopyTweet = useCallback(
-    (_index: number, text: string) => copyToClipboard(text, "Tweet"),
+  const handleCopyPost = useCallback(
+    (_index: number, text: string) => copyToClipboard(text, "Post"),
     [copyToClipboard]
   );
   const handleCopyAllNumbered = useCallback(
@@ -229,7 +229,7 @@ export default function Home() {
                   ? { title: result.meta.title, siteName: result.meta.siteName }
                   : undefined
               }
-              onCopyTweet={handleCopyTweet}
+              onCopyPost={handleCopyPost}
               onCopyAllNumbered={handleCopyAllNumbered}
               onCopyAllBlock={handleCopyAllBlock}
             />

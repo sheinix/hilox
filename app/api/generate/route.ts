@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { generateRequestSchema, generateResponseSchema } from "@/lib/validators";
+import { generateRequestSchema, generateResponseSchema, getMaxPostsForLength } from "@/lib/validators";
 import { extractFromUrl, extractFromPastedText } from "@/lib/extract";
 import { createOpenAIClient, requestOutline, requestRender } from "@/lib/openai";
 import {
@@ -129,8 +129,11 @@ export async function POST(request: Request) {
     const client = createOpenAIClient();
     const angleOpt = typeof angle === "string" ? angle.trim() || undefined : undefined;
     const langOpt = typeof threadLanguage === "string" ? threadLanguage : undefined;
+    const maxPosts = getMaxPostsForLength(length);
     const outlineResult = await requestOutline(client, clamped, tone, length, angleOpt, langOpt);
-    const tweets = await requestRender(client, outlineResult.tweets, tone, angleOpt, langOpt);
+    const outlineCapped = outlineResult.tweets.slice(0, maxPosts);
+    const rendered = await requestRender(client, outlineCapped, tone, angleOpt, langOpt);
+    const tweets = rendered.slice(0, maxPosts);
 
     const duration_ms = Date.now() - start;
     logInfo("openai_success", ctx, { model, duration_ms });

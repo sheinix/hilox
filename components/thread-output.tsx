@@ -18,7 +18,7 @@ const MAX_CHARS = 280;
 export interface ThreadOutputProps {
   tweets: string[];
   meta?: { title?: string; siteName?: string };
-  onCopyTweet?: (index: number, text: string) => void;
+  onCopyPost?: (index: number, text: string) => void;
   onCopyAllNumbered?: (text: string) => void;
   onCopyAllBlock?: (text: string) => void;
   className?: string;
@@ -27,7 +27,7 @@ export interface ThreadOutputProps {
 export function ThreadOutput({
   tweets,
   meta,
-  onCopyTweet,
+  onCopyPost,
   onCopyAllNumbered,
   onCopyAllBlock,
   className,
@@ -86,7 +86,7 @@ export function ThreadOutput({
                   Copy all (block)
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>Copy thread with blank lines between tweets</TooltipContent>
+              <TooltipContent>Copy thread with blank lines between posts</TooltipContent>
             </Tooltip>
           </div>
           <ul className="space-y-3">
@@ -115,12 +115,12 @@ export function ThreadOutput({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => onCopyTweet?.(i, tweet)}
+                            onClick={() => onCopyPost?.(i, tweet)}
                           >
                             <Copy className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
-                        <TooltipContent>Copy this tweet</TooltipContent>
+                        <TooltipContent>Copy this post</TooltipContent>
                       </Tooltip>
                     </div>
                   </div>

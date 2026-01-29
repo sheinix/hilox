@@ -78,7 +78,7 @@ export function HistoryPanel({
                     {item.meta.title || "Untitled"}
                   </span>
                   <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {formatDate(item.createdAt)} · {item.tweets.length} tweets
+                    {formatDate(item.createdAt)} · {item.tweets.length} posts
                   </span>
                 </button>
               </li>

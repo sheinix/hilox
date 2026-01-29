@@ -1,7 +1,17 @@
 import { z } from "zod";
 
 const TONE_OPTIONS = ["professional", "casual", "urgent", "neutral"] as const;
-const LENGTH_OPTIONS = ["7", "8", "9", "10"] as const;
+const LENGTH_OPTIONS = ["6", "7", "8", "9", "10+"] as const;
+
+/** Max posts for 10+ is 15 internally. */
+export const MAX_POSTS_FOR_10_PLUS = 15;
+
+/** Returns the max number of posts to return for a given length option. */
+export function getMaxPostsForLength(length: string): number {
+  if (length === "10+") return MAX_POSTS_FOR_10_PLUS;
+  const n = parseInt(length, 10);
+  return Number.isFinite(n) && n >= 6 && n <= 9 ? n : 8;
+}
 
 /** Language names for thread output (model writes thread in this language). */
 const THREAD_LANGUAGE_OPTIONS = ["English", "Spanish", "French", "German", "Portuguese", "Italian"] as const;

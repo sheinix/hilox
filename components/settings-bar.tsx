@@ -61,7 +61,7 @@ export function SettingsBar({
           </div>
         </div>
         <div className="grid gap-2">
-          <Label>Thread length (tweets)</Label>
+          <Label>Thread length (posts)</Label>
           <div className="flex flex-wrap gap-2">
             {LENGTH_OPTIONS.map((n) => (
               <button
