@@ -8,7 +8,12 @@ import { ThreadOutput } from "@/components/thread-output";
 import { HistoryPanel } from "@/components/history-panel";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { getHistory, pushHistory, clearHistory, type HistoryItem } from "@/lib/storage";
+import {
+  getHistory,
+  pushHistory,
+  clearHistory,
+  type HistoryItem,
+} from "@/lib/storage";
 import type { Tone, Length, ThreadLanguage } from "@/components/settings-bar";
 import { Loader2 } from "lucide-react";
 
@@ -16,7 +21,14 @@ type GenerateState = "idle" | "loading" | "success" | "error";
 
 interface GenerationResult {
   tweets: string[];
-  meta: { title: string; siteName: string; url?: string; tone: string; length: string; createdAt: string };
+  meta: {
+    title: string;
+    siteName: string;
+    url?: string;
+    tone: string;
+    length: string;
+    createdAt: string;
+  };
   sources: { title: string; url?: string; siteName: string };
 }
 
@@ -28,12 +40,15 @@ export default function Home() {
   const [tone, setTone] = useState<Tone>("professional");
   const [length, setLength] = useState<Length>("8");
   const [angle, setAngle] = useState("");
-  const [threadLanguage, setThreadLanguage] = useState<ThreadLanguage>("English");
+  const [threadLanguage, setThreadLanguage] =
+    useState<ThreadLanguage>("English");
   const [state, setState] = useState<GenerateState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>(INITIAL_HISTORY);
-  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(
+    null
+  );
 
   const loadHistory = useCallback(() => {
     setHistory(getHistory());
@@ -65,7 +80,8 @@ export default function Home() {
           tone,
           length,
           angle: angle.trim() || undefined,
-          threadLanguage: threadLanguage !== "English" ? threadLanguage : undefined,
+          threadLanguage:
+            threadLanguage !== "English" ? threadLanguage : undefined,
         }),
       });
 
@@ -143,9 +159,12 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <header className="border-b bg-card/50">
         <div className="container mx-auto max-w-6xl px-4 py-6">
-          <h1 className="text-2xl font-bold tracking-tight">🧵 Hilox: News-to-Thread</h1>
+          <h1 className="text-2xl font-bold tracking-tight">
+            🧵 Hilox: News-to-Thread
+          </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Easily turn news articles into trendy, readable X Threads. Paste a news or article URL (or text), get a tweet thread with hook + CTA.
+            Easily turn news articles into trendy, readable X Threads. Paste a
+            news or article URL (or text), get a tweet thread with hook + CTA.
           </p>
         </div>
       </header>
@@ -188,7 +207,9 @@ export default function Home() {
                   )}
                 </Button>
                 {errorMessage && state === "error" && (
-                  <p className="mt-3 text-sm text-destructive">{errorMessage}</p>
+                  <p className="mt-3 text-sm text-destructive">
+                    {errorMessage}
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -203,7 +224,11 @@ export default function Home() {
           <div className="space-y-6">
             <ThreadOutput
               tweets={result?.tweets ?? []}
-              meta={result?.meta ? { title: result.meta.title, siteName: result.meta.siteName } : undefined}
+              meta={
+                result?.meta
+                  ? { title: result.meta.title, siteName: result.meta.siteName }
+                  : undefined
+              }
               onCopyTweet={handleCopyTweet}
               onCopyAllNumbered={handleCopyAllNumbered}
               onCopyAllBlock={handleCopyAllBlock}
