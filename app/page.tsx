@@ -42,6 +42,7 @@ export default function Home() {
   const [angle, setAngle] = useState("");
   const [threadLanguage, setThreadLanguage] =
     useState<ThreadLanguage>("English");
+  const [includeOriginalLink, setIncludeOriginalLink] = useState(false);
   const [state, setState] = useState<GenerateState>("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [result, setResult] = useState<GenerationResult | null>(null);
@@ -66,6 +67,11 @@ export default function Home() {
       return;
     }
 
+    // Reset includeOriginalLink if switching to pasted text
+    if (!hasUrl && includeOriginalLink) {
+      setIncludeOriginalLink(false);
+    }
+
     setState("loading");
     setErrorMessage(null);
     setResult(null);
@@ -82,6 +88,7 @@ export default function Home() {
           angle: angle.trim() || undefined,
           threadLanguage:
             threadLanguage !== "English" ? threadLanguage : undefined,
+          includeOriginalLink: hasUrl && includeOriginalLink ? true : undefined,
         }),
       });
 
@@ -116,7 +123,7 @@ export default function Home() {
       setState("error");
       toast.error(msg);
     }
-  }, [url, pastedText, tone, length, angle, threadLanguage]);
+  }, [url, pastedText, tone, length, angle, threadLanguage, includeOriginalLink]);
 
   const copyToClipboard = useCallback((text: string, label: string) => {
     navigator.clipboard.writeText(text).then(
@@ -184,10 +191,13 @@ export default function Home() {
               length={length}
               angle={angle}
               threadLanguage={threadLanguage}
+              includeOriginalLink={includeOriginalLink}
+              hasUrl={url.trim().length > 0}
               onToneChange={setTone}
               onLengthChange={setLength}
               onAngleChange={setAngle}
               onThreadLanguageChange={setThreadLanguage}
+              onIncludeOriginalLinkChange={setIncludeOriginalLink}
               disabled={state === "loading"}
             />
             <Card>

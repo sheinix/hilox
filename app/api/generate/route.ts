@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { generateRequestSchema, generateResponseSchema, getMaxPostsForLength } from "@/lib/validators";
 import { extractFromUrl, extractFromPastedText } from "@/lib/extract";
 import { createOpenAIClient, requestOutline, requestRender } from "@/lib/openai";
+import { shortenUrl } from "@/lib/urlShortener";
 import {
   getClientIp,
   enforceRateLimits,
@@ -76,7 +77,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const parsed = generateRequestSchema.parse(body);
-    const { url, pastedText, tone, length, angle, threadLanguage } = parsed;
+    const { url, pastedText, tone, length, angle, threadLanguage, includeOriginalLink } = parsed;
 
     let title: string;
     let siteName: string;
@@ -130,9 +131,45 @@ export async function POST(request: Request) {
     const angleOpt = typeof angle === "string" ? angle.trim() || undefined : undefined;
     const langOpt = typeof threadLanguage === "string" ? threadLanguage : undefined;
     const maxPosts = getMaxPostsForLength(length);
-    const outlineResult = await requestOutline(client, clamped, tone, length, angleOpt, langOpt);
+    const shouldIncludeLink = includeOriginalLink === true && urlUsed != null;
+    
+    // Shorten URL if needed
+    let shortUrl: string | undefined;
+    if (shouldIncludeLink && urlUsed) {
+      shortUrl = await shortenUrl(urlUsed);
+      logInfo("url_shortened", ctx, { 
+        original_length: urlUsed.length, 
+        short_length: shortUrl.length,
+        short_url: shortUrl,
+        should_include_link: shouldIncludeLink
+      });
+    }
+
+    logInfo("calling_openai_outline", ctx, {
+      should_include_link: shouldIncludeLink,
+      url_to_pass: shortUrl ?? urlUsed
+    });
+    
+    const outlineResult = await requestOutline(
+      client,
+      clamped,
+      tone,
+      length,
+      angleOpt,
+      langOpt,
+      shouldIncludeLink,
+      shortUrl ?? urlUsed
+    );
     const outlineCapped = outlineResult.tweets.slice(0, maxPosts);
-    const rendered = await requestRender(client, outlineCapped, tone, angleOpt, langOpt);
+    const rendered = await requestRender(
+      client,
+      outlineCapped,
+      tone,
+      angleOpt,
+      langOpt,
+      shouldIncludeLink,
+      shortUrl ?? urlUsed
+    );
     const tweets = rendered.slice(0, maxPosts);
 
     const duration_ms = Date.now() - start;

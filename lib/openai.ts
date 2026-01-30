@@ -30,7 +30,9 @@ export async function requestOutline(
   tone: string,
   length: string,
   angle?: string,
-  threadLanguage?: string
+  threadLanguage?: string,
+  includeOriginalLink?: boolean,
+  originalUrl?: string
 ): Promise<{ tweets: { topic: string; bullets: string[] }[] }> {
   const model = getModel();
   const maxTokens = getMaxOutputTokens();
@@ -38,6 +40,10 @@ export async function requestOutline(
   const languageLine =
     threadLanguage && threadLanguage !== "English"
       ? `\nWrite the entire thread in ${threadLanguage}. Keep the same structure (hook, points, CTA).`
+      : "";
+  const linkLine =
+    includeOriginalLink && originalUrl
+      ? `\nIMPORTANT: Include this exact shortened link in the last tweet (CTA): ${originalUrl}\nDo NOT modify or shorten this URL further. Include it exactly as provided. Ensure the final tweet with the link stays under 280 characters.`
       : "";
 
   const maxPosts = getMaxPostsForLength(length);
@@ -59,7 +65,7 @@ ${countInstruction}
 Each item: { "topic": "short topic label", "bullets": ["point 1", "point 2", ...] }.
 Base the outline ONLY on the provided article text. Do not invent facts, numbers, or quotes. If something is not in the text, note "not confirmed" in the bullet.
 Tone: ${tone}.
-First tweet should be a hook. Last tweet should be a CTA (question or call to action).${angleLine}${languageLine}`,
+First tweet should be a hook. Last tweet should be a CTA (question or call to action).${angleLine}${languageLine}${linkLine}`,
       },
       {
         role: "user",
@@ -92,7 +98,9 @@ export async function requestRender(
   outline: { topic: string; bullets: string[] }[],
   tone: string,
   angle?: string,
-  threadLanguage?: string
+  threadLanguage?: string,
+  includeOriginalLink?: boolean,
+  originalUrl?: string
 ): Promise<string[]> {
   const model = getModel();
   const maxTokens = getMaxOutputTokens();
@@ -100,6 +108,10 @@ export async function requestRender(
   const languageLine =
     threadLanguage && threadLanguage !== "English"
       ? ` Write the entire thread in ${threadLanguage}.`
+      : "";
+  const linkLine =
+    includeOriginalLink && originalUrl
+      ? `\nIMPORTANT: Include this exact shortened link in the last tweet (CTA): ${originalUrl}\nDo NOT modify or shorten this URL further. Include it exactly as provided. Ensure the final tweet with the link stays under 280 characters.`
       : "";
 
   const completion = await client.chat.completions.create({
@@ -114,7 +126,7 @@ Convert the outline into final tweet copy.
 Output valid JSON only. No markdown code fences.
 Output a JSON object with a single key "tweets": array of strings, one per tweet, in order.
 Each tweet MUST be at most 280 characters.
-No invented facts, numbers, or quotes. Tone: ${tone}.${angleLine}${languageLine}
+No invented facts, numbers, or quotes. Tone: ${tone}.${angleLine}${languageLine}${linkLine}
 First tweet: hook. Last tweet: CTA (question or call to action).`,
       },
       {

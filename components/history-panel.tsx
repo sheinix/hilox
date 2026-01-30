@@ -74,12 +74,17 @@ export function HistoryPanel({
                       : "border-transparent bg-muted/30"
                   )}
                 >
-                  <span className="line-clamp-1 font-medium">
-                    {item.meta.title || "Untitled"}
-                  </span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">
-                    {formatDate(item.createdAt)} · {item.tweets.length} posts
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base leading-none flex-shrink-0">🧵</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="line-clamp-1 font-medium block">
+                        {item.meta.title || "Untitled"}
+                      </span>
+                      <span className="mt-0.5 block text-xs text-muted-foreground">
+                        {formatDate(item.createdAt)} · {item.tweets.length} posts
+                      </span>
+                    </div>
+                  </div>
                 </button>
               </li>
             ))}

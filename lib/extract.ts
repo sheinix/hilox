@@ -1,4 +1,4 @@
-import { JSDOM } from "jsdom";
+import { JSDOM, VirtualConsole } from "jsdom";
 import { Readability } from "@mozilla/readability";
 import type { ExtractResponse } from "./validators";
 import { assertSafeUrl, safeFetchHtml, type FetchMetrics } from "./security/ssrf";
@@ -10,7 +10,16 @@ const MIN_EXTRACT_LENGTH = 800;
  * Parses HTML with JSDOM + Readability. Throws AppError if no article or content too short.
  */
 export function extractFromHtml(html: string, finalUrl: string): ExtractResponse {
-  const dom = new JSDOM(html, { url: finalUrl });
+  // Suppress CSS parsing errors from jsdom to avoid polluting logs with huge CSS dumps
+  const virtualConsole = new VirtualConsole();
+  virtualConsole.on("error", () => {
+    // Silently ignore CSS parsing errors (common with complex stylesheets)
+  });
+
+  const dom = new JSDOM(html, { 
+    url: finalUrl,
+    virtualConsole 
+  });
   const document = dom.window.document;
   const reader = new Readability(document, { charThreshold: 0 });
   const article = reader.parse();

@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 import { TONE_OPTIONS, LENGTH_OPTIONS, THREAD_LANGUAGE_OPTIONS } from "@/lib/validators";
 import { cn } from "@/lib/utils";
 
@@ -15,10 +16,13 @@ export interface SettingsBarProps {
   length: Length;
   angle: string;
   threadLanguage: ThreadLanguage;
+  includeOriginalLink: boolean;
+  hasUrl: boolean;
   onToneChange: (tone: Tone) => void;
   onLengthChange: (length: Length) => void;
   onAngleChange: (angle: string) => void;
   onThreadLanguageChange: (lang: ThreadLanguage) => void;
+  onIncludeOriginalLinkChange: (include: boolean) => void;
   disabled?: boolean;
 }
 
@@ -27,10 +31,13 @@ export function SettingsBar({
   length,
   angle,
   threadLanguage,
+  includeOriginalLink,
+  hasUrl,
   onToneChange,
   onLengthChange,
   onAngleChange,
   onThreadLanguageChange,
+  onIncludeOriginalLinkChange,
   disabled,
 }: SettingsBarProps) {
   return (
@@ -110,6 +117,23 @@ export function SettingsBar({
             disabled={disabled}
             className="text-sm"
           />
+        </div>
+        <div className="flex items-center gap-2">
+          <Checkbox
+            id="include-link"
+            checked={includeOriginalLink}
+            onCheckedChange={(checked) => onIncludeOriginalLinkChange(checked === true)}
+            disabled={disabled || !hasUrl}
+          />
+          <Label
+            htmlFor="include-link"
+            className={cn(
+              "text-sm font-normal cursor-pointer",
+              (!hasUrl || disabled) && "opacity-50 cursor-not-allowed"
+            )}
+          >
+            Include original link
+          </Label>
         </div>
       </CardContent>
     </Card>

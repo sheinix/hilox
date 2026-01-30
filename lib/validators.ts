@@ -23,6 +23,7 @@ export const generateRequestSchema = z.object({
   length: z.enum(LENGTH_OPTIONS).default("8"),
   angle: z.string().max(500).optional(),
   threadLanguage: z.enum(THREAD_LANGUAGE_OPTIONS).optional(),
+  includeOriginalLink: z.boolean().optional(),
 });
 
 export type GenerateRequest = z.infer<typeof generateRequestSchema>;
