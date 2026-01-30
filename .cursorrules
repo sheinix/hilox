@@ -1,9 +1,3 @@
-
----
-
-## 3) `.cursorrules` (drop into repo root)
-
-```txt
 # Cursor Rules: News-to-Thread Agent (MVP)
 
 You are working in a single Next.js repository (NOT a monorepo).
