@@ -33,6 +33,7 @@
     "next": "15.0.3",
     "openai": "^4.73.0",
     "react": "^19.0.0",
+    "resend": "^4.0.0",
     "react-dom": "^19.0.0",
     "sonner": "^1.7.0",
     "tailwind-merge": "^2.5.4",

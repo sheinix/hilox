@@ -9,8 +9,9 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "🧵 Hilox: News-to-Thread",
-  description: "Easily turn news articles into trendy, readable X Threads. Paste a news or article URL (or text), get a tweet thread with hook + CTA.",
+  title: "Hilox — News to X Thread in 20 Seconds",
+  description:
+    "Paste a news URL → get a ready-to-post X thread. Extraction, hook, and copy-per-tweet. No signup.",
 };
 
 export default function RootLayout({

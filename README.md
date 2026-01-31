@@ -19,20 +19,14 @@ Turn a news or article URL (or pasted text) into an X (Twitter) thread: 7–10 t
    yarn install
    ```
 
-2. Environment variables (create `.env.local`):
-
-   ```env
-   OPENAI_API_KEY=sk-...
-   OPENAI_MODEL=gpt-4o-mini
-   UPSTASH_REDIS_REST_URL=https://xxx.upstash.io
-   UPSTASH_REDIS_REST_TOKEN=...
-   ```
+2. Environment variables: copy `.env.example` to `.env.local` and fill in values. Required and optional vars:
 
    - `OPENAI_API_KEY` (required): Your OpenAI API key. Never exposed to the client.
    - `OPENAI_MODEL` (optional): Model for thread generation. Default: `gpt-4o-mini`.
    - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`: Required for production rate limiting (Upstash Redis). If unset, rate limiting is skipped (dev only).
    - `OVERRIDE_MAX_OUTPUT_TOKENS` (optional): Max tokens for OpenAI completions. Default: `900`.
    - `LOG_SALT` (optional but recommended): Salt for hashing IPs in logs. If set, `hashIp()` uses `sha256(ip + LOG_SALT)` so logs never contain raw IPs.
+   - `RESEND_API_KEY`, `BETA_NOTIFY_EMAIL` (optional): For beta signup (`POST /api/beta`). If unset in production, the endpoint returns 503.
    - `SENTRY_DSN` (optional): Sentry DSN for server-side error reporting. If unset, Sentry is disabled.
    - `SENTRY_ENVIRONMENT` (optional): Sentry environment name (e.g. `production`, `staging`). Defaults to `NODE_ENV`.
    - `SENTRY_TRACES_SAMPLE_RATE` (optional): Sentry performance tracing sample rate (0–1). Default: `0`.
@@ -67,12 +61,34 @@ Turn a news or article URL (or pasted text) into an X (Twitter) thread: 7–10 t
 4. **Output**: Array of tweets + metadata. UI shows per-tweet copy, “copy all (numbered)”, “copy all (block)”, and character counts.
 5. **History**: Last 10 results saved in localStorage; clicking an item restores that thread.
 
-## Deployment (Vercel)
+## Deploy to Vercel
 
-- Set `OPENAI_API_KEY` and optionally `OPENAI_MODEL` in the project environment.
-- Set `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` for production rate limiting (recommended).
-- Build: `yarn build`. No special config; App Router and Route Handlers work on Vercel.
-- Extraction and generate routes use **Node runtime** (`runtime = 'nodejs'`) for jsdom/Readability.
+1. **Connect the repo**  
+   Use [Vercel Git integration](https://vercel.com/docs/git): import the repo and link the Git provider. Do not commit secrets; use Vercel Environment Variables.
+
+2. **Environment variables**  
+   In the Vercel project → Settings → Environment Variables, set (copy from `.env.example` as reference):
+
+   - **Required**: `OPENAI_API_KEY`, `OPENAI_MODEL` (e.g. `gpt-4o-mini`)
+   - **Recommended for production**: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (rate limiting)
+   - **Beta signup**: `RESEND_API_KEY`, `BETA_NOTIFY_EMAIL` (for `POST /api/beta`). If unset, beta signup returns 503 in production.
+   - **Optional**: `LOG_SALT`, `SENTRY_DSN`, `SENTRY_ENVIRONMENT`, `SENTRY_TRACES_SAMPLE_RATE`
+
+   Apply to **Production** and **Preview** so both deployment types work.
+
+3. **Preview deployments on PRs**  
+   With Git integration, every pull request gets a unique preview URL. No extra config.
+
+4. **Production on main**  
+   Pushes (or merges) to the default branch (e.g. `main`) deploy to the production URL. Confirm in Vercel → Settings → Git that "Production Branch" is set to `main`.
+
+5. **Recommended Vercel project settings**  
+   - Framework Preset: Next.js  
+   - Build Command: `yarn build` (default)  
+   - Install Command: `yarn install` (default)  
+   - Node.js Version: 20.x (set in project Settings if needed)
+
+   No `vercel.json` is required; Next.js and Route Handlers work with Vercel defaults. Extraction and generate routes use the Node runtime for jsdom/Readability.
 
 ## Security
 

@@ -86,4 +86,11 @@ export const apiErrorSchema = z.object({
 
 export type ApiError = z.infer<typeof apiErrorSchema>;
 
+/** Beta signup: email only. */
+export const betaRequestSchema = z.object({
+  email: z.string().email("Please enter a valid email address."),
+});
+
+export type BetaRequest = z.infer<typeof betaRequestSchema>;
+
 export { TONE_OPTIONS, LENGTH_OPTIONS, THREAD_LANGUAGE_OPTIONS };
